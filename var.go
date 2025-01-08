@@ -1,20 +1,8 @@
 // Copyright 2023 The Cockroach Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// Copyright 2025 Bob Vawter (bob@vawter.org)
 // SPDX-License-Identifier: Apache-2.0
 
-// Package notify contains utility code for notification behaviors.
+// Package notify contains a utility for variable notification behaviors.
 package notify
 
 import (
@@ -31,10 +19,11 @@ var ErrNoUpdate = errors.New("no update required")
 //
 // Usage notes:
 //   - The zero value of Var is ready to use.
-//   - Var can be called concurrently from multiple goroutines.
 //   - A Var should not be copied.
-//   - If the value contained by the Var is mutable, the [Var.Peek] and
-//     [Var.Update] methods should be used to ensure race-free behavior.
+//   - Methods on Var can be called concurrently from multiple
+//     goroutines. If the value contained by the Var is mutable, the
+//     [Var.Peek] and [Var.Update] methods should be used to
+//     ensure race-free behavior.
 type Var[T any] struct {
 	mu struct {
 		sync.RWMutex
@@ -52,20 +41,7 @@ func VarOf[T any](initial T) *Var[T] {
 }
 
 // Get returns the current (possibly zero) value for T and a channel
-// that will be closed the next time that Set or Update is called. This
-// API does not guarantee that a loop as shown below will see every
-// update made to the Var.  Rather, it allows a consumer to sample the
-// most current value available.
-//
-//	for value, valueUpdated := v.Get(); ;{
-//	  doSomething(value)
-//	  select {
-//	    case <-valueUpdated:
-//	      value, valueUpdated = v.Get()
-//	    case <-ctx.Done():
-//	      return ctx.Err()
-//	  }
-//	}
+// that will be closed the next time that Set or Update is called.
 func (v *Var[T]) Get() (T, <-chan struct{}) {
 	v.mu.RLock()
 	data, ch := v.mu.data, v.mu.updated
